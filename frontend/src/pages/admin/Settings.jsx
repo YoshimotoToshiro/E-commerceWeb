@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { settingsAPI } from '../../api/settings';
+import BackButton from '../../components/common/BackButton';
 
 export default function AdminSettings() {
   const [siteName, setSiteName] = useState('Tech Store');
@@ -50,6 +51,7 @@ export default function AdminSettings() {
 
   return (
     <div className="container mx-auto px-4 py-10">
+      <BackButton className="mb-4" />
       <h1 className="text-3xl font-bold mb-6">Cấu hình hệ thống</h1>
       {loading ? (
         <div className="bg-white rounded-lg shadow p-6">Đang tải...</div>

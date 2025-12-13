@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { orderAPI } from '../../api/order';
 import { userAPI } from '../../api/user';
 import { productAPI } from '../../api/product';
+import BackButton from '../../components/common/BackButton';
 
 const REPORT_TYPES = [
   { id: 'revenue', label: 'Doanh thu / Thống kê đơn hàng' },
@@ -253,6 +254,7 @@ export default function Reports() {
 
   return (
     <div className="container mx-auto px-4 py-10">
+      <BackButton className="mb-4" />
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold">Reports & Export</h1>
 

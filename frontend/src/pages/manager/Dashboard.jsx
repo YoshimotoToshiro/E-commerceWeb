@@ -12,8 +12,6 @@ export default function Dashboard() {
 
   // KPIs
   const [summary, setSummary] = useState(null);
-  const [newCustomersToday, setNewCustomersToday] = useState(0);
-  const [todayCost, setTodayCost] = useState(0);
 
   // Charts
   const [revenueSeries, setRevenueSeries] = useState([]);
@@ -154,9 +152,9 @@ export default function Dashboard() {
         }
       }
 
-      // Load top products
+      // Load top products (top 10)
       try {
-        const topRes = await statisticsAPI.getTopSellingProducts({ limit: 5 });
+        const topRes = await statisticsAPI.getTopSellingProducts({ limit: 10 });
         if (topRes.data?.success) {
           setTopProducts(topRes.data.data.products || []);
         } else {
@@ -260,10 +258,6 @@ export default function Dashboard() {
         // Không hiển thị toast vì đây là tính năng phụ
       }
 
-      // Placeholders for costs, new customers
-      setTodayCost(0);
-      setNewCustomersToday(0);
-
       if (hasError) {
         console.warn('Some dashboard data failed to load');
       }
@@ -299,13 +293,11 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
         <KPI icon="🛒" label="Tổng đơn hàng" value={(summary?.todayOrders ?? 0).toLocaleString('vi-VN')} tone="primary" />
         <KPI icon="💰" label="Doanh thu hôm nay" value={formatCurrencyVND(summary?.todayRevenue || 0)} tone="accent" />
-        <KPI icon="📉" label="Chi phí hôm nay" value={formatCurrencyVND(todayCost || 0)} tone="red" />
-        <KPI icon="📈" label="Lợi nhuận" value={formatCurrencyVND((summary?.todayRevenue || 0) - (todayCost || 0))} tone="green" />
-        <KPI icon="👥" label="Khách hàng mới" value={(newCustomersToday ?? 0).toLocaleString('vi-VN')} tone="indigo" />
         <KPI icon="📦" label="SP sắp hết hàng" value={(summary?.lowStockCount ?? 0).toLocaleString('vi-VN')} tone="yellow" />
+        <KPI icon="👥" label="Khách hàng mới" value={'-'} tone="indigo" />
       </div>
 
       {/* Charts */}
@@ -317,23 +309,23 @@ export default function Dashboard() {
             <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>
           )}
         </Card>
-        <Card title="Tình trạng đơn hàng">
-          {orderStatusDist.length > 0 ? (
-            <OrderStatusPieChart data={orderStatusDist} />
-          ) : (
-            <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>
-          )}
+        <Card title="Tình trạng đơn hàng" compact>
+          <div style={{ marginTop: '-25px' }}>
+            {orderStatusDist.length > 0 ? (
+              <OrderStatusPieChart data={orderStatusDist} />
+            ) : (
+              <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>
+            )}
+          </div>
         </Card>
-        <Card title="Top 5 sản phẩm bán chạy">
+        <Card title="Top 10 sản phẩm bán chạy" className="lg:col-span-2">
           {topProducts.length > 0 ? (
-            <BarChart data={topProducts.map(p => ({ label: p.name, value: p.totalSold }))} />
-          ) : (
-            <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>
-          )}
-        </Card>
-        <Card title="Doanh thu theo nhân viên/chi nhánh">
-          {groupedRevenue && groupedRevenue.length > 0 ? (
-            <GroupedBarChart data={groupedRevenue} />
+            <BarChart
+              data={topProducts.map(p => ({
+                label: p.productName || p.name || p.product?.name || 'Sản phẩm',
+                value: p.totalSold
+              }))}
+            />
           ) : (
             <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>
           )}
@@ -463,10 +455,10 @@ function KPI({ icon, label, value, tone }) {
   );
 }
 
-function Card({ title, children }) {
+function Card({ title, children, compact = false, className = '' }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="font-semibold mb-3">{title}</div>
+    <div className={`bg-white rounded-lg shadow p-3 ${className}`}>
+      <div className={`font-semibold text-sm ${compact ? 'mb-0 -mb-2' : 'mb-2'}`}>{title}</div>
       {children}
     </div>
   );
@@ -498,25 +490,91 @@ function LineChart({ data }) {
 
 // Biểu đồ cột ngang (Bar Chart) - cho top sản phẩm
 function BarChart({ data }) {
-  const width = 560;
-  const height = 200;
-  const padding = 24;
+  // Rộng hơn theo số lượng sản phẩm để tránh chồng nhãn
+  const width = Math.max(300, data.length * 80);
+  // Tăng chiều cao và đáy để đủ chỗ cho nhãn ngang nhiều dòng
+  const height = 260;
+  const padding = { top: 20, right: 16, bottom: 110, left: 55 };
   const values = data.map(d => d.value || 0);
-  const labels = data.map(d => d.label);
-  const max = Math.max(1, ...values);
-  const barW = (width - padding * 2) / Math.max(1, values.length);
+  // Giữ nguyên tên đầy đủ, không cắt, hiển thị đầy đủ khi xoay
+  const labels = data.map(d => {
+    const label = d.label || '';
+    return { display: label, full: label };
+  });
+  // Y-axis: làm tròn và thêm headroom để tránh trùng nhãn 1,1
+  const rawMax = Math.max(1, ...values);
+  const suggestedMax = rawMax + 1;
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const barW = innerWidth / Math.max(1, values.length);
+  const ticks = Array.from({ length: suggestedMax + 1 }, (_, i) => i);
 
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`}>
+      {/* Y axis grid & labels */}
+      {ticks.map((t, i) => {
+        const y = padding.top + innerHeight - (t / suggestedMax) * innerHeight;
+        const val = t;
+        return (
+          <g key={i}>
+            <line
+              x1={padding.left}
+              y1={y}
+              x2={width - padding.right}
+              y2={y}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+              strokeDasharray="2,2"
+            />
+            <text
+              x={padding.left - 6}
+              y={y + 3}
+              fontSize="8"
+              textAnchor="end"
+              fill="#6b7280"
+            >
+              {val}
+            </text>
+          </g>
+        );
+      })}
+
       {values.map((v, i) => {
-        const h = (v / max) * (height - padding * 2);
-        const x = padding + i * barW + 6;
-        const y = height - padding - h;
+        const h = (v / suggestedMax) * innerHeight;
+        const x = padding.left + i * barW + 6;
+        const y = padding.top + innerHeight - h;
         return (
           <g key={i}>
             <rect x={x} y={y} width={barW - 12} height={h} fill="#10b981" rx="4" />
-            <text x={x + (barW - 12) / 2} y={height - 6} fontSize="10" textAnchor="middle" fill="#6b7280">
-              {labels[i]?.slice(0, 8) || ''}
+            {/* value on top */}
+            {h > 8 && (
+            <text
+              x={x + (barW - 12) / 2}
+              y={y - 6}
+              fontSize="9"
+              textAnchor="middle"
+              fill="#374151"
+              fontWeight="600"
+            >
+              {v}
+            </text>
+            )}
+            <text
+              x={x + (barW - 12) / 2}
+              y={height - 30}
+              fontSize="9"
+              textAnchor="middle"
+              fill="#6b7280"
+              title={labels[i].full}
+            >
+              {(() => {
+                const parts = labels[i].display.match(/.{1,10}/g) || [''];
+                return parts.map((line, idx) => (
+                  <tspan key={idx} x={x + (barW - 12) / 2} dy={idx === 0 ? 0 : 12}>
+                    {line}
+                  </tspan>
+                ));
+              })()}
             </text>
           </g>
         );
@@ -533,9 +591,9 @@ function GroupedBarChart({ data }) {
   
   console.log('GroupedBarChart data:', data);
 
-  const width = 560;
-  const height = 220;
-  const padding = 32;
+  const width = 240;
+  const height = 140;
+  const padding = 20;
   const groups = data;
   const seriesLabels = [...new Set(groups.flatMap(g => g.series.map(s => s.label)))];
   const max = Math.max(1, ...groups.flatMap(g => g.series.map(s => s.value || 0)));
@@ -570,8 +628,8 @@ function GroupedBarChart({ data }) {
                     {h > 20 && (
                       <text 
                         x={x + (barW - 2) / 2} 
-                        y={y - 5} 
-                        fontSize="9" 
+                        y={y - 4} 
+                        fontSize="7" 
                         textAnchor="middle" 
                         fill="#374151"
                         fontWeight="500"
@@ -584,12 +642,12 @@ function GroupedBarChart({ data }) {
               })}
               <text 
                 x={centerX} 
-                y={height - 6} 
-                fontSize="10" 
+                y={height - 4} 
+                fontSize="8" 
                 textAnchor="middle" 
                 fill="#6b7280"
               >
-                {g.group?.slice(0, 15) || ''}
+                {g.group?.slice(0, 10) || ''}
               </text>
             </g>
           );
@@ -602,15 +660,15 @@ function GroupedBarChart({ data }) {
 // Biểu đồ cột cho doanh thu theo ngày
 function DailyRevenueBarChart({ data }) {
   if (!data || data.length === 0) {
-    return <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>;
+    return <div className="text-gray-500 text-sm py-4 text-center">Chưa có dữ liệu</div>;
   }
 
   // Debug log
   console.log('DailyRevenueBarChart rendering with data:', data);
 
-  const width = 450;
-  const height = 220;
-  const padding = { top: 15, right: 15, bottom: 35, left: 45 };
+  const width = 240;
+  const height = 120;
+  const padding = { top: 8, right: 8, bottom: 20, left: 30 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -657,9 +715,9 @@ function DailyRevenueBarChart({ data }) {
                 strokeDasharray="2,2"
               />
               <text
-                x={padding.left - 8}
-                y={y + 4}
-                fontSize="9"
+                x={padding.left - 4}
+                y={y + 2}
+                fontSize="7"
                 textAnchor="end"
                 fill="#6b7280"
               >
@@ -685,11 +743,11 @@ function DailyRevenueBarChart({ data }) {
                 fill="#3b82f6"
                 rx="4"
               />
-                    {barHeight > 15 && (
+              {barHeight > 8 && (
                       <text
                         x={x + barWidth / 2}
-                        y={y - 4}
-                        fontSize="8"
+                  y={y - 1}
+                  fontSize="5"
                         textAnchor="middle"
                         fill="#374151"
                         fontWeight="500"
@@ -699,11 +757,11 @@ function DailyRevenueBarChart({ data }) {
                     )}
                     <text
                       x={x + barWidth / 2}
-                      y={height - padding.bottom + 12}
-                      fontSize="8"
+                y={height - padding.bottom + 6}
+                fontSize="5"
                       textAnchor="middle"
                       fill="#6b7280"
-                      transform={`rotate(-45 ${x + barWidth / 2} ${height - padding.bottom + 12})`}
+                transform={`rotate(-45 ${x + barWidth / 2} ${height - padding.bottom + 6})`}
                     >
                       {labels[i] || ''}
                     </text>
@@ -721,17 +779,21 @@ function OrderStatusPieChart({ data }) {
     return <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>;
   }
 
-  const width = 250;
-  const height = 250;
+  const width = 30;
+  const height = 30;
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.min(width, height) / 2 - 15;
+  const radius = Math.min(width, height) / 2 - 6;
 
   // Tính tổng và góc cho mỗi phần
   const total = data.reduce((sum, item) => sum + parseInt(item.count || 0), 0);
   if (total === 0) {
     return <div className="text-gray-500 text-sm py-8 text-center">Chưa có dữ liệu</div>;
   }
+
+  // Debug: Log để kiểm tra
+  console.log('OrderStatusPieChart - Data:', data);
+  console.log('OrderStatusPieChart - Total:', total);
 
   // Màu sắc cho từng trạng thái
   const statusColors = {
@@ -785,57 +847,77 @@ function OrderStatusPieChart({ data }) {
     // Tính vị trí label (giữa cung)
     const labelAngle = (startAngle + endAngle) / 2;
     const labelAngleRad = (labelAngle * Math.PI) / 180;
-    const labelRadius = radius * 0.7;
+    // Điều chỉnh labelRadius để phù hợp với kích thước biểu đồ nhỏ
+    const labelRadius = radius * 0.55;
     const labelX = centerX + labelRadius * Math.cos(labelAngleRad);
     const labelY = centerY + labelRadius * Math.sin(labelAngleRad);
+    
+    // Tính font size dựa trên radius để responsive (tỷ lệ với radius)
+    // Giảm đáng kể để tránh bị clip - font size nhỏ hơn nhiều
+    // Với radius nhỏ (khoảng 9), font size sẽ là ~2-3
+    const responsiveFontSize = Math.max(2, Math.min(radius * 0.25, 4));
 
+    const percentageValue = parseFloat(percentage.toFixed(1));
+    
+    // Debug log
+    console.log(`Segment: status=${item.status}, count=${count}, percentage=${percentageValue}%, angle=${angle.toFixed(1)}°`);
+    
     return {
       ...item,
       pathData,
-      percentage: percentage.toFixed(1),
+      percentage: percentageValue,
+      percentageText: `${percentageValue}%`,
       labelX,
       labelY,
+      fontSize: responsiveFontSize,
       color: statusColors[item.status] || '#9ca3af',
       label: statusLabels[item.status] || item.status,
     };
   });
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+    <div className="flex items-start gap-4 w-full -mt-25">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="mb-1 shrink-0"
+        style={{ width: '100%', maxWidth: '360px', margin: '0 auto' }}
+      >
         {segments.map((segment, i) => (
           <g key={i}>
             <path
               d={segment.pathData}
               fill={segment.color}
               stroke="#fff"
-              strokeWidth="2"
+              strokeWidth="1"
             />
-            {parseFloat(segment.percentage) > 5 && (
+            {segment.percentage > 12 && (
               <text
                 x={segment.labelX}
                 y={segment.labelY}
-                fontSize="10"
+                fontSize={segment.fontSize || 3}
                 textAnchor="middle"
                 fill="#fff"
                 fontWeight="600"
+                dominantBaseline="middle"
+                style={{ fontSize: `${segment.fontSize || 3}px` }}
               >
-                {segment.percentage}%
+                {segment.percentageText || `${segment.percentage}%`}
               </text>
             )}
           </g>
         ))}
       </svg>
       
-      {/* Legend */}
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+      {/* Legend bên cạnh chart, nằm trong container */}
+      <div className="flex flex-col gap-2 justify-start flex-1" style={{ fontSize: '18px' }}>
         {segments.map((segment, i) => (
           <div key={i} className="flex items-center gap-2">
             <div
-              className="w-3 h-3 rounded"
+              className="w-2.5 h-2.5 rounded"
               style={{ backgroundColor: segment.color }}
             />
-            <span className="text-gray-700">{segment.label}</span>
+            <span className="text-gray-700 font-medium">{segment.label}</span>
             <span className="text-gray-500">({segment.count})</span>
           </div>
         ))}

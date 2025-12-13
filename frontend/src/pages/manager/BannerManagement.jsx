@@ -45,6 +45,10 @@ export default function BannerManagement() {
     try {
       const submitData = {
         ...formData,
+        subtitle: '', // Bỏ phụ đề
+        button_text: '', // Bỏ text nút
+        button_link: '', // Bỏ link nút
+        background_color: '#1E40AF', // Màu nền mặc định
         start_date: formData.start_date || null,
         end_date: formData.end_date || null
       };
@@ -159,36 +163,6 @@ export default function BannerManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Phụ đề</label>
-                <input
-                  type="text"
-                  value={formData.subtitle}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Text nút</label>
-                <input
-                  type="text"
-                  value={formData.button_text}
-                  onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Link nút</label>
-                <input
-                  type="text"
-                  value={formData.button_link}
-                  onChange={(e) => setFormData({ ...formData, button_link: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1">URL hình nền</label>
                 <input
                   type="text"
@@ -196,16 +170,6 @@ export default function BannerManagement() {
                   onChange={(e) => setFormData({ ...formData, background_image: e.target.value })}
                   placeholder="https://example.com/image.jpg"
                   className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Màu nền</label>
-                <input
-                  type="color"
-                  value={formData.background_color}
-                  onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
-                  className="w-full h-10 border rounded-lg"
                 />
               </div>
 

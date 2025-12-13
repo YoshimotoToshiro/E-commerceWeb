@@ -35,7 +35,7 @@ export default function ProductList() {
     const params = {
       ...filters,
       page: filters.page || 1,
-      limit: 12,
+      limit: 15,
     };
     Object.keys(params).forEach(key => {
       if (!params[key]) delete params[key];
@@ -81,10 +81,10 @@ export default function ProductList() {
                 onClick={() => navigate('/products')}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
                 Xem tất cả sản phẩm
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </button>
             )}
           </div>

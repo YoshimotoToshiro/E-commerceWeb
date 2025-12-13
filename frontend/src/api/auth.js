@@ -6,5 +6,6 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
   getCurrentUser: () => api.get('/auth/me'),
   refreshToken: () => api.post('/auth/refresh'),
+  changePassword: (data) => api.post('/auth/change-password', data),
 };
 

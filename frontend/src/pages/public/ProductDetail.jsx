@@ -254,6 +254,19 @@ export default function ProductDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Điều chỉnh quantity khi variant hoặc stock thay đổi
+  useEffect(() => {
+    if (!product) return;
+    const variant = product.variants?.find(v => v.id === selectedVariant);
+    const maxQty = variant 
+      ? variant.stock_quantity 
+      : (typeof product.stock_quantity === 'number' ? product.stock_quantity : 999);
+    
+    if (quantity > maxQty) {
+      setQuantity(Math.max(1, maxQty));
+    }
+  }, [selectedVariant, product]);
+
   useEffect(() => {
     // Reset ảnh hiện tại khi đổi sản phẩm
     setCurrentImageIndex(0);
@@ -273,7 +286,7 @@ export default function ProductDetail() {
         if (res.data.success) {
           const products = res.data.data.products || [];
           const filtered = products.filter(item => item.id !== product.id);
-          setRelatedProducts(filtered.slice(0, 4));
+          setRelatedProducts(filtered.slice(0, 5));
         }
       })
       .catch(err => {
@@ -612,6 +625,12 @@ const resolveColor = (label = '') => {
       return;
     }
 
+    // Chặn manager và admin thêm vào giỏ hàng
+    if (user && (user.role === 'manager' || user.role === 'admin')) {
+      toast.error('Tài khoản manager và admin không thể đặt hàng');
+      return;
+    }
+
     try {
       await cartAPI.addItem({
         product_id: product.id,
@@ -628,6 +647,12 @@ const resolveColor = (label = '') => {
     if (!isAuthenticated) {
       toast.error('Vui lòng đăng nhập để mua hàng');
       navigate('/login');
+      return;
+    }
+
+    // Chặn manager, admin và employee mua hàng
+    if (user && (user.role === 'manager' || user.role === 'admin' || user.role === 'employee')) {
+      toast.error('Tài khoản manager, admin và employee không thể đặt hàng');
       return;
     }
 
@@ -953,20 +978,41 @@ const resolveColor = (label = '') => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="px-4 py-2 border rounded-lg"
+                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={quantity <= 1}
               >
                 -
               </button>
               <input
                 type="number"
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  const newValue = parseInt(e.target.value) || 1;
+                  const maxQty = variant 
+                    ? variant.stock_quantity 
+                    : (typeof product.stock_quantity === 'number' ? product.stock_quantity : 999);
+                  setQuantity(Math.max(1, Math.min(newValue, maxQty)));
+                }}
                 className="w-20 px-4 py-2 border rounded-lg text-center"
                 min="1"
+                max={variant 
+                  ? variant.stock_quantity 
+                  : (typeof product.stock_quantity === 'number' ? product.stock_quantity : undefined)}
               />
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="px-4 py-2 border rounded-lg"
+                onClick={() => {
+                  const maxQty = variant 
+                    ? variant.stock_quantity 
+                    : (typeof product.stock_quantity === 'number' ? product.stock_quantity : 999);
+                  setQuantity(Math.min(quantity + 1, maxQty));
+                }}
+                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={(() => {
+                  const maxQty = variant 
+                    ? variant.stock_quantity 
+                    : (typeof product.stock_quantity === 'number' ? product.stock_quantity : 999);
+                  return quantity >= maxQty;
+                })()}
               >
                 +
               </button>
@@ -988,18 +1034,37 @@ const resolveColor = (label = '') => {
           {/* Actions */}
           <div className="mb-4 space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={handleAddToCart}
-                className="flex-1 rounded-xl border border-primary/30 px-6 py-3 font-semibold text-primary shadow-sm transition hover:border-primary hover:bg-primary/5"
-            >
-              Thêm vào giỏ
-            </button>
-            <button
-              onClick={handleBuyNow}
-                className="flex-1 rounded-xl bg-accent px-6 py-3 font-semibold text-white shadow-md transition hover:bg-orange-600"
-            >
-              Mua ngay
-            </button>
+            {(user?.role === 'manager' || user?.role === 'admin' || user?.role === 'employee') ? (
+              <>
+                <button
+                  disabled
+                  className="flex-1 rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-400 cursor-not-allowed"
+                >
+                  Không thể thêm vào giỏ
+                </button>
+                <button
+                  disabled
+                  className="flex-1 rounded-xl bg-gray-300 px-6 py-3 font-semibold text-gray-500 cursor-not-allowed"
+                >
+                  Không thể mua hàng
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 rounded-xl border border-primary/30 px-6 py-3 font-semibold text-primary shadow-sm transition hover:border-primary hover:bg-primary/5"
+                >
+                  Thêm vào giỏ
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  className="flex-1 rounded-xl bg-accent px-6 py-3 font-semibold text-white shadow-md transition hover:bg-orange-600"
+                >
+                  Mua ngay
+                </button>
+              </>
+            )}
             </div>
             <div className="grid gap-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-4 sm:grid-cols-3">
               <div className="flex items-center gap-3">
@@ -1059,10 +1124,9 @@ const resolveColor = (label = '') => {
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Chính sách bảo hành</h3>
               {product.warranty_period ? (
-                <div className="text-gray-600 leading-relaxed space-y-1">
-                  <p>Bảo hành {product.warranty_period} tháng.</p>
-                  {product.warranty_description && <p>{product.warranty_description}</p>}
-                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  {product.warranty_description || `Bảo hành ${product.warranty_period} tháng.`}
+                </p>
               ) : (
                 <p className="text-gray-500">Thông tin bảo hành sẽ được cập nhật sau.</p>
               )}

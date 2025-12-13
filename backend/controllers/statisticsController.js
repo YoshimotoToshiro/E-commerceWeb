@@ -53,7 +53,7 @@ const getRevenue = async (req, res, next) => {
           SUM(final_amount) as total,
           COUNT(*) as count
         FROM orders
-        WHERE status != 'cancelled' 
+        WHERE status = 'delivered' 
           AND order_date IS NOT NULL
         GROUP BY DATE(order_date)
         ORDER BY period ASC
@@ -65,7 +65,7 @@ const getRevenue = async (req, res, next) => {
           COALESCE(SUM(CAST(final_amount AS DECIMAL(12,2))), 0) as total,
           COUNT(id) as count
         FROM orders
-        WHERE status != 'cancelled' 
+        WHERE status = 'delivered' 
           AND order_date IS NOT NULL
           AND order_date >= '${safeStartDate}'
         GROUP BY YEAR(order_date), WEEK(order_date, 1)
@@ -78,7 +78,7 @@ const getRevenue = async (req, res, next) => {
           COALESCE(SUM(CAST(final_amount AS DECIMAL(12,2))), 0) as total,
           COUNT(id) as count
         FROM orders
-        WHERE status != 'cancelled' 
+        WHERE status = 'delivered' 
           AND order_date IS NOT NULL
           AND order_date >= '${safeStartDate}'
         GROUP BY YEAR(order_date), MONTH(order_date)
@@ -91,7 +91,7 @@ const getRevenue = async (req, res, next) => {
           COALESCE(SUM(CAST(final_amount AS DECIMAL(12,2))), 0) as total,
           COUNT(id) as count
         FROM orders
-        WHERE status != 'cancelled' 
+        WHERE status = 'delivered' 
           AND order_date IS NOT NULL
           AND order_date >= '${safeStartDate}'
         GROUP BY YEAR(order_date)
@@ -337,18 +337,19 @@ const getDashboardSummary = async (req, res, next) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Doanh thu hôm nay
+    // Doanh thu hôm nay: chỉ tính đơn đã hoàn thành
     const todayRevenue = await Order.sum('final_amount', {
       where: {
         order_date: { [Op.gte]: today },
-        status: { [Op.ne]: 'cancelled' }
+        status: 'delivered'
       }
     }) || 0;
 
-    // Đơn hàng mới hôm nay
+    // Đơn hàng mới hôm nay: chỉ tính đơn đã hoàn thành
     const todayOrders = await Order.count({
       where: {
-        order_date: { [Op.gte]: today }
+        order_date: { [Op.gte]: today },
+        status: 'delivered'
       }
     });
 
@@ -398,7 +399,8 @@ const getRevenueByEmployee = async (req, res, next) => {
         COALESCE(SUM(o.final_amount), 0) as total_revenue
       FROM orders o
       INNER JOIN users u ON o.employee_id = u.id
-      WHERE o.status != 'cancelled'
+      WHERE o.status = 'delivered'
+      WHERE o.status = 'delivered'
         AND u.role = 'employee'
         AND o.employee_id IS NOT NULL
       GROUP BY u.id, u.full_name, u.username

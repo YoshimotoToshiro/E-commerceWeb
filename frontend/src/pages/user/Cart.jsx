@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cartAPI } from '../../api/cart';
+import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/common/Loading';
 import toast from 'react-hot-toast';
 import BackButton from '../../components/common/BackButton';
 import { formatCurrencyVND, moneyToWordsVn } from '../../utils/currency';
 
 export default function Cart() {
+  const { user } = useAuth();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Chặn manager, admin và employee truy cập giỏ hàng
+  useEffect(() => {
+    if (user && (user.role === 'manager' || user.role === 'admin' || user.role === 'employee')) {
+      toast.error('Tài khoản manager, admin và employee không thể đặt hàng');
+      navigate('/products');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     loadCart();
@@ -95,18 +105,39 @@ export default function Cart() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                      className="px-3 py-1 border rounded"
+                      className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={item.quantity <= 1}
                     >
                       -
                     </button>
                     <span className="w-12 text-center">{item.quantity}</span>
                     <button
-                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                      className="px-3 py-1 border rounded"
+                      onClick={() => {
+                        const maxQty = item.variant?.stock_quantity || item.product?.stock_quantity || 999;
+                        if (item.quantity < maxQty) {
+                          handleUpdateQuantity(item.id, item.quantity + 1);
+                        }
+                      }}
+                      className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={(() => {
+                        const maxQty = item.variant?.stock_quantity || item.product?.stock_quantity || 999;
+                        return item.quantity >= maxQty;
+                      })()}
                     >
                       +
                     </button>
                   </div>
+                  {(() => {
+                    const maxQty = item.variant?.stock_quantity || item.product?.stock_quantity;
+                    if (maxQty !== undefined && maxQty !== null) {
+                      return (
+                        <span className="text-xs text-gray-500">
+                          Còn lại: {maxQty}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   <p className="font-semibold">
                     {formatCurrencyVND(item.subtotal)}
                   </p>
@@ -140,9 +171,10 @@ export default function Cart() {
             </div>
             <button
               onClick={() => navigate('/user/checkout')}
-              className="w-full px-4 py-3 bg-accent text-white rounded-lg hover:bg-orange-600"
+              disabled={user?.role === 'manager' || user?.role === 'admin' || user?.role === 'employee'}
+              className="w-full px-4 py-3 bg-accent text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Thanh toán
+              {(user?.role === 'manager' || user?.role === 'admin' || user?.role === 'employee') ? 'Không thể đặt hàng' : 'Thanh toán'}
             </button>
           </div>
         </div>

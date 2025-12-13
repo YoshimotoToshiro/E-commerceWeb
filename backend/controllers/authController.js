@@ -254,11 +254,74 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+// Change password
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+      });
+    }
+
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Kiểm tra mật khẩu hiện tại
+    const isPasswordValid = await user.comparePassword(currentPassword);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Cập nhật mật khẩu mới
+    await user.update({ password: newPassword });
+
+    // Log action
+    try {
+      await SystemLog.create({
+        user_id: user.id,
+        action: 'CHANGE_PASSWORD',
+        description: `User ${user.username} đổi mật khẩu`,
+        ip_address: req.ip
+      });
+    } catch (logError) {
+      console.error('Error creating change password log:', logError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   refreshToken,
   logout,
-  getCurrentUser
+  getCurrentUser,
+  changePassword
 };
 

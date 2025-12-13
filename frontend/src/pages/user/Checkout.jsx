@@ -14,6 +14,14 @@ export default function Checkout() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Chặn manager, admin và employee đặt hàng
+  useEffect(() => {
+    if (user && (user.role === 'manager' || user.role === 'admin' || user.role === 'employee')) {
+      toast.error('Tài khoản manager, admin và employee không thể đặt hàng');
+      navigate('/products');
+    }
+  }, [user, navigate]);
   const [formData, setFormData] = useState({
     shipping_address: user?.address || '',
     shipping_phone: user?.phone || '',
@@ -46,6 +54,14 @@ export default function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Chặn manager, admin và employee đặt hàng
+    if (user && (user.role === 'manager' || user.role === 'admin' || user.role === 'employee')) {
+      toast.error('Tài khoản manager, admin và employee không thể đặt hàng');
+      navigate('/products');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
