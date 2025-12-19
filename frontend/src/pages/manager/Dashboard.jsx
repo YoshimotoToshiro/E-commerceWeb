@@ -276,20 +276,8 @@ export default function Dashboard() {
       <BackButton className="mb-4" />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">📊 Bảng Thống Kê Tổng Quan</h1>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600">Khoảng thời gian</label>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="px-3 py-2 border rounded-lg"
-          >
-            <option value="day">Theo ngày</option>
-            <option value="month">Theo tháng</option>
-            <option value="year">Theo năm</option>
-          </select>
-        </div>
       </div>
 
       {/* KPI Cards */}

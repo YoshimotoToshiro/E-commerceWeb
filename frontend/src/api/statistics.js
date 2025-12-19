@@ -6,5 +6,7 @@ export const statisticsAPI = {
   getTopSellingProducts: (params) => api.get('/statistics/products/top-selling', { params }),
   getLowStockProducts: (params) => api.get('/statistics/products/low-stock', { params }),
   getDashboardSummary: () => api.get('/statistics/dashboard'),
+  getRevenueByEmployee: () => api.get('/statistics/revenue/by-employee'),
+  getHighlightEmployees: () => api.get('/statistics/employees/highlight'),
 };
 

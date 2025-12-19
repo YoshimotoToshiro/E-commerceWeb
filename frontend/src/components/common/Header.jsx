@@ -128,29 +128,31 @@ export default function Header() {
               </>
             ) : (
               <>
-                <Link
-                  to="/user/cart"
-                  className="relative flex items-center gap-2 px-4 py-2 text-white/90 hover:text-white"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
+                {user?.role === 'user' && (
+                  <Link
+                    to="/user/cart"
+                    className="relative flex items-center gap-2 px-4 py-2 text-white/90 hover:text-white"
                   >
-                    <path d="M4 6h2l3.6 9.59a1 1 0 0 0 .92.66H17a1 1 0 0 0 .95-.68L20 9H7" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx="9" cy="20" r="1.4" />
-                    <circle cx="17" cy="20" r="1.4" />
-                  </svg>
-                  <span>Giỏ hàng</span>
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-[#ff3c1f] text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartCount}
-                    </span>
-                  )}
-                </Link>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <path d="M4 6h2l3.6 9.59a1 1 0 0 0 .92.66H17a1 1 0 0 0 .95-.68L20 9H7" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="9" cy="20" r="1.4" />
+                      <circle cx="17" cy="20" r="1.4" />
+                    </svg>
+                    <span>Giỏ hàng</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-white text-[#ff3c1f] text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
 
                 <div
                   className="relative"
@@ -174,7 +176,7 @@ export default function Header() {
                         >
                           👤 Hồ sơ
                         </Link>
-                        {user?.role !== 'employee' && (
+                        {user?.role === 'user' && (
                           <Link
                             to="/user/orders"
                             className="block px-4 py-2 hover:bg-gray-100"
@@ -212,19 +214,13 @@ export default function Header() {
                                 to="/manager/dashboard"
                                 className="block px-4 py-2 hover:bg-gray-100"
                               >
-                                📊 Dashboard
+                                📊 Thống kê
                               </Link>
                               <Link
                                 to="/manager/products"
                                 className="block px-4 py-2 hover:bg-gray-100"
                               >
                                 🛍️ Quản lý sản phẩm
-                              </Link>
-                              <Link
-                                to="/manager/statistics"
-                                className="block px-4 py-2 hover:bg-gray-100"
-                              >
-                                📈 Thống kê
                               </Link>
                               <Link
                                 to="/manager/banners"

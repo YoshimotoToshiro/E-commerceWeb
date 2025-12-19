@@ -12,6 +12,8 @@ router.get('/orders', statisticsController.getOrderStats);
 router.get('/products/top-selling', statisticsController.getTopSellingProducts);
 router.get('/products/low-stock', statisticsController.getLowStockProducts);
 router.get('/dashboard', statisticsController.getDashboardSummary);
+router.get('/revenue/by-employee', statisticsController.getRevenueByEmployee);
+router.get('/employees/highlight', statisticsController.getHighlightEmployees);
 
 module.exports = router;
 
